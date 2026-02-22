@@ -1,0 +1,29 @@
+# Genomic-RawSeq-Analyzer — Python dependencies
+# Install: pip install -r requirements.txt
+# Colab: pip install -r requirements.txt --quiet
+
+# ── Core ──────────────────────────────────
+numpy>=1.26
+pandas>=2.1
+scipy>=1.11
+
+# ── Deep Learning ─────────────────────────
+tensorflow>=2.15
+# For GPU (Colab / local NVIDIA):
+# tensorflow[and-cuda]>=2.15
+
+# ── Bioinformatics ─────────────────────────
+biopython>=1.81
+
+# ── Machine Learning ──────────────────────
+scikit-learn>=1.4
+
+# ── Visualisation ─────────────────────────
+matplotlib>=3.8
+seaborn>=0.13
+
+# ── Transformers (Semester 2) ─────────────
+# Uncomment when starting Issue #3 (DNABERT-2 integration)
+# transformers>=4.40
+# torch>=2.2
+# accelerate>=0.28
