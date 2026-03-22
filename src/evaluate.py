@@ -139,25 +139,37 @@ class Evaluator:
 
     def patient_level_auc(
         self,
+        threshold: float = 0.5,
         plot: bool = True,
         save_path: str = None,
-    ) -> float:
+    ) -> dict:
         """
         Crowd-voting: aggregate read-level probabilities per patient (run_id),
-        then evaluate patient-level AUC.
+        then evaluate patient-level AUC and classification metrics.
 
         Each patient's cancer probability = mean(read probabilities).
         The ground-truth patient label is the majority label of its reads.
 
+        Parameters
+        ----------
+        threshold : float
+            Decision threshold for patient-level binary classification.
+        plot : bool
+            If True, generate ROC curve and box plot.
+        save_path : str
+            Base path for saving plots (without extension).
+
         Returns
         -------
-        float : patient-level AUC-ROC (or None if run_ids not provided)
+        dict : patient-level metrics including AUC, precision, recall, F1,
+               and the per-patient DataFrame for downstream analysis.
+               Returns None if run_ids not provided.
         """
         if self.run_ids is None:
             print("run_ids not provided — skipping patient-level evaluation.")
             return None
 
-        # Build per-patient aggregation
+        # ── Build per-patient aggregation ──
         df = pd.DataFrame({
             "run_id": self.run_ids,
             "prob": self.probs,
@@ -166,39 +178,146 @@ class Evaluator:
 
         patient_df = df.groupby("run_id").agg(
             patient_prob=("prob", "mean"),
-            patient_label=("label", lambda x: int(x.mode()[0])),  # majority label
+            patient_label=("label", lambda x: int(x.mode()[0])),
             n_reads=("prob", "count"),
+            prob_std=("prob", "std"),
+            prob_median=("prob", "median"),
         ).reset_index()
 
+        # ── Patient-level AUC ──
         patient_auc = roc_auc_score(
             patient_df["patient_label"], patient_df["patient_prob"]
         )
 
-        print(f"\nPatient-level aggregation:")
-        print(f"  Patients evaluated: {len(patient_df)}")
-        print(f"  Reads per patient (mean): {patient_df['n_reads'].mean():.0f}")
-        print(f"  Patient-level AUC: {patient_auc:.4f}")
+        # ── Patient-level classification at threshold ──
+        patient_df["predicted"] = (patient_df["patient_prob"] >= threshold).astype(int)
+        p, r, f1, _ = precision_recall_fscore_support(
+            patient_df["patient_label"], patient_df["predicted"],
+            average="binary", zero_division=0,
+        )
+        acc = np.mean(
+            patient_df["predicted"] == patient_df["patient_label"]
+        )
+
+        print(f"\nPatient-level aggregation (crowd-voting):")
+        print(f"  Patients evaluated : {len(patient_df)}")
+        print(f"    Normal patients  : {sum(patient_df['patient_label'] == 0)}")
+        print(f"    Tumor patients   : {sum(patient_df['patient_label'] == 1)}")
+        print(f"  Reads per patient  : {patient_df['n_reads'].mean():.0f} (mean)")
+        print(f"  Patient-level AUC  : {patient_auc:.4f}")
+        print(f"  Threshold          : {threshold}")
+        print(f"  Accuracy           : {acc:.4f}")
+        print(f"  Precision          : {p:.4f}")
+        print(f"  Recall             : {r:.4f}")
+        print(f"  F1 Score           : {f1:.4f}")
+
+        # ── Per-patient detail table ──
+        print(f"\n  Per-patient breakdown:")
+        for _, row in patient_df.sort_values("patient_prob", ascending=False).iterrows():
+            true_label = "TUMOR " if row["patient_label"] == 1 else "NORMAL"
+            pred_label = "TUMOR " if row["predicted"] == 1 else "NORMAL"
+            correct = "✓" if row["patient_label"] == row["predicted"] else "✗"
+            print(f"    {row['run_id']}  "
+                  f"P(cancer)={row['patient_prob']:.4f}  "
+                  f"true={true_label}  pred={pred_label}  "
+                  f"reads={row['n_reads']:,}  {correct}")
 
         if plot:
-            fpr, tpr, _ = roc_curve(
-                patient_df["patient_label"], patient_df["patient_prob"]
-            )
-            plt.figure(figsize=(7, 7))
-            plt.plot(fpr, tpr, color="green", lw=2,
-                     label=f"Patient ROC (AUC = {patient_auc:.4f})")
-            plt.plot([0, 1], [0, 1], color="navy", lw=1.5, linestyle="--")
-            plt.xlabel("False Positive Rate", fontsize=12)
-            plt.ylabel("True Positive Rate", fontsize=12)
-            plt.title("Patient-Level ROC Curve (Crowd Voting)", fontsize=14)
-            plt.legend(loc="lower right")
-            plt.grid(alpha=0.3)
-            plt.tight_layout()
-            if save_path:
-                plt.savefig(save_path, dpi=200, bbox_inches="tight")
-                print(f"Saved: {save_path}")
-            plt.show()
+            self._plot_patient_roc(patient_df, patient_auc, save_path)
+            self._plot_patient_boxplot(patient_df, threshold, save_path)
 
-        return patient_auc
+        return {
+            "auc": patient_auc,
+            "accuracy": acc,
+            "precision": p,
+            "recall": r,
+            "f1": f1,
+            "threshold": threshold,
+            "n_patients": len(patient_df),
+            "patient_df": patient_df,
+        }
+
+    # ── Patient-level plots ──────────────────────────────
+
+    @staticmethod
+    def _plot_patient_roc(patient_df, patient_auc, save_path=None):
+        """Plot patient-level ROC curve."""
+        fpr, tpr, _ = roc_curve(
+            patient_df["patient_label"], patient_df["patient_prob"]
+        )
+        plt.figure(figsize=(7, 7))
+        plt.plot(fpr, tpr, color="green", lw=2,
+                 label=f"Patient ROC (AUC = {patient_auc:.4f})")
+        plt.plot([0, 1], [0, 1], color="navy", lw=1.5, linestyle="--")
+        plt.xlabel("False Positive Rate", fontsize=12)
+        plt.ylabel("True Positive Rate", fontsize=12)
+        plt.title("Patient-Level ROC Curve (Crowd Voting)", fontsize=14)
+        plt.legend(loc="lower right")
+        plt.grid(alpha=0.3)
+        plt.tight_layout()
+        if save_path:
+            path = f"{save_path}_roc.png"
+            plt.savefig(path, dpi=200, bbox_inches="tight")
+            print(f"Saved: {path}")
+        plt.show()
+
+    @staticmethod
+    def _plot_patient_boxplot(patient_df, threshold=0.5, save_path=None):
+        """
+        Box plot of patient cancer scores: Cancer vs Normal distributions.
+        Visualises the separation achieved by crowd-voting aggregation.
+        """
+        normal_scores = patient_df.loc[
+            patient_df["patient_label"] == 0, "patient_prob"
+        ].values
+        cancer_scores = patient_df.loc[
+            patient_df["patient_label"] == 1, "patient_prob"
+        ].values
+
+        fig, ax = plt.subplots(figsize=(8, 6))
+
+        bp = ax.boxplot(
+            [normal_scores, cancer_scores],
+            labels=["Normal", "Cancer"],
+            patch_artist=True,
+            widths=0.5,
+            showmeans=True,
+            meanprops=dict(marker="D", markerfacecolor="gold", markersize=8),
+        )
+
+        bp["boxes"][0].set_facecolor("steelblue")
+        bp["boxes"][0].set_alpha(0.6)
+        bp["boxes"][1].set_facecolor("crimson")
+        bp["boxes"][1].set_alpha(0.6)
+
+        # Overlay individual patient points (strip/swarm style)
+        np.random.seed(42)
+        jitter = 0.08
+        ax.scatter(
+            np.ones(len(normal_scores)) + np.random.uniform(-jitter, jitter, len(normal_scores)),
+            normal_scores, color="steelblue", alpha=0.7, s=40, zorder=3, edgecolors="white",
+        )
+        ax.scatter(
+            2 * np.ones(len(cancer_scores)) + np.random.uniform(-jitter, jitter, len(cancer_scores)),
+            cancer_scores, color="crimson", alpha=0.7, s=40, zorder=3, edgecolors="white",
+        )
+
+        # Threshold line
+        ax.axhline(y=threshold, color="gray", linestyle="--", lw=1.5,
+                    label=f"Threshold = {threshold}")
+
+        ax.set_ylabel("Aggregated Cancer Probability\n(mean across reads)", fontsize=11)
+        ax.set_title("Patient-Level Score Distribution\n(Crowd-Voting Aggregation)", fontsize=13)
+        ax.legend(loc="upper left")
+        ax.set_ylim(-0.05, 1.05)
+        ax.grid(axis="y", alpha=0.3)
+        plt.tight_layout()
+
+        if save_path:
+            path = f"{save_path}_boxplot.png"
+            plt.savefig(path, dpi=200, bbox_inches="tight")
+            print(f"Saved: {path}")
+        plt.show()
 
     # ── Distribution plot ─────────────────────────────────
 
@@ -256,16 +375,21 @@ class Evaluator:
         self.prediction_distribution(save_path=_p("prediction_distribution.png"))
         self.classification_metrics()
 
-        patient_auc = None
+        patient_result = None
         if self.run_ids is not None:
-            patient_auc = self.patient_level_auc(save_path=_p("roc_patient_level.png"))
+            patient_result = self.patient_level_auc(
+                save_path=_p("patient_level") if save_dir else None,
+            )
 
         print("\n" + "=" * 60)
         print("SUMMARY")
         print("=" * 60)
         print(f"  Read-level AUC:    {read_auc:.4f}")
-        if patient_auc is not None:
-            print(f"  Patient-level AUC: {patient_auc:.4f}")
+        if patient_result is not None:
+            print(f"  Patient-level AUC: {patient_result['auc']:.4f}")
+            boost = patient_result["auc"] - read_auc
+            print(f"  AUC improvement:   {'+' if boost >= 0 else ''}{boost:.4f}"
+                  f"  ({'↑ crowd-voting helps!' if boost > 0 else '↓ investigate'})")
         print("=" * 60)
 
 
@@ -325,11 +449,14 @@ if __name__ == "__main__":
 
     print("Loading model and data...")
     model = load_model(args.model_path)
-    X, y = DataLoader.load_all_batches(args.batch_dir)
+    X, y, run_ids = DataLoader.load_all_batches(args.batch_dir)
 
-    _, X_test, _, y_test = train_test_split(
-        X, y, test_size=args.test_size, random_state=42, stratify=y
+    indices = np.arange(len(X))
+    _, test_idx = train_test_split(
+        indices, test_size=args.test_size, random_state=42, stratify=y
     )
+    X_test, y_test = X[test_idx], y[test_idx]
+    run_ids_test = run_ids[test_idx] if run_ids is not None else None
 
-    evaluator = Evaluator(model, X_test, y_test)
+    evaluator = Evaluator(model, X_test, y_test, run_ids=run_ids_test)
     evaluator.full_report(save_dir=args.save_dir)

@@ -146,8 +146,14 @@ class DataLoader:
         Downloads each FASTQ, encodes reads, and saves compressed
         .npz checkpoint files every `batch_size` runs.
         Resume-safe: existing batch files are not overwritten.
+
+        Each batch file stores:
+            X        — integer-encoded reads, shape (N, max_len)
+            y        — binary labels, shape (N,)
+            run_ids  — SRA run accession per read, shape (N,)
+                       (enables patient-level aggregation downstream)
         """
-        current_X, current_y = [], []
+        current_X, current_y, current_run_ids = [], [], []
         total = len(run_df)
 
         for idx, row in run_df.iterrows():
@@ -158,6 +164,7 @@ class DataLoader:
             if reads:
                 current_X.extend(reads)
                 current_y.extend([label] * len(reads))
+                current_run_ids.extend([run_id] * len(reads))
                 logger.info(f"  → {len(reads):,} reads added.")
             else:
                 logger.warning(f"  → Skipped {run_id} (no data).")
@@ -165,8 +172,9 @@ class DataLoader:
             files_done = idx + 1
             if files_done % self.batch_size == 0 or files_done == total:
                 batch_num = (files_done + self.batch_size - 1) // self.batch_size
-                self._save_batch(current_X, current_y, batch_num)
-                current_X, current_y = [], []
+                self._save_batch(current_X, current_y, batch_num,
+                                 run_ids=current_run_ids)
+                current_X, current_y, current_run_ids = [], [], []
 
     # ── Static loaders ─────────────────────────────────────
 
@@ -177,25 +185,41 @@ class DataLoader:
 
         Returns
         -------
-        X : np.ndarray, shape (N, max_len)   — integer-encoded reads
-        y : np.ndarray, shape (N,)            — binary labels (0=Normal, 1=Tumor)
+        X       : np.ndarray, shape (N, max_len)   — integer-encoded reads
+        y       : np.ndarray, shape (N,)            — binary labels (0=Normal, 1=Tumor)
+        run_ids : np.ndarray, shape (N,)            — SRA run accession per read
+                  (None if batch files lack run_ids — backward-compatible)
         """
         files = sorted(glob.glob(os.path.join(batch_dir, "batch_*.npz")))
         if not files:
             raise FileNotFoundError(f"No batch files found in: {batch_dir}")
 
-        X_parts, y_parts = [], []
+        X_parts, y_parts, run_id_parts = [], [], []
+        has_run_ids = True
+
         for f in files:
-            with np.load(f) as data:
+            with np.load(f, allow_pickle=True) as data:
                 X_parts.append(data["X"])
                 y_parts.append(data["y"])
+                if "run_ids" in data:
+                    run_id_parts.append(data["run_ids"])
+                else:
+                    has_run_ids = False
             logger.info(f"  Loaded {os.path.basename(f)}")
 
         X = np.concatenate(X_parts, axis=0)
         y = np.concatenate(y_parts, axis=0)
+        run_ids = np.concatenate(run_id_parts, axis=0) if has_run_ids else None
+
         logger.info(f"Total: X={X.shape}  y={y.shape}  "
                     f"(Normal={sum(y == 0):,}  Tumor={sum(y == 1):,})")
-        return X, y
+        if run_ids is not None:
+            unique_runs = len(np.unique(run_ids))
+            logger.info(f"  run_ids loaded: {unique_runs} unique patients")
+        else:
+            logger.warning("  run_ids NOT found in batch files (legacy format)")
+
+        return X, y, run_ids
 
     @staticmethod
     def load_unsupervised(
@@ -233,7 +257,7 @@ class DataLoader:
         reads = []
 
         try:
-            exit_code = os.system(f"wget -q '{url}' -O '{local_path}'")
+            exit_code = os.system(f"curl -s '{url}' -o '{local_path}'")
             if (
                 exit_code != 0
                 or not os.path.exists(local_path)
@@ -257,18 +281,22 @@ class DataLoader:
 
         return reads
 
-    def _save_batch(self, X: list, y: list, batch_num: int) -> None:
-        """Compress and save current batch as .npz."""
+    def _save_batch(self, X: list, y: list, batch_num: int,
+                    run_ids: list = None) -> None:
+        """Compress and save current batch as .npz (with run_ids for patient aggregation)."""
         if not X:
             logger.warning("  Empty batch — nothing saved.")
             return
 
         save_path = os.path.join(self.output_dir, f"batch_{batch_num:03d}.npz")
-        np.savez_compressed(
-            save_path,
+        save_dict = dict(
             X=np.array(X, dtype=np.int8),
             y=np.array(y, dtype=np.int8),
         )
+        if run_ids is not None:
+            save_dict["run_ids"] = np.array(run_ids, dtype="U20")
+
+        np.savez_compressed(save_path, **save_dict)
         logger.info(f"  ── Saved {save_path}  shape=({len(X)}, {self.max_len})")
 
 

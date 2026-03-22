@@ -96,8 +96,10 @@ Genomic-RawSeq-Analyzer/
 ├── src/                                # Modular Python scripts (Semester 2)
 │   ├── data_loader.py                  # FASTQ streaming, encoding, batch processing
 │   ├── models.py                       # CNN, Autoencoder, DNABERT-2 definitions
-│   ├── explainability.py               # Occlusion sensitivity analysis
-│   └── evaluate.py                     # AUC metrics, patient-level aggregation
+│   ├── train.py                        # Training pipeline (CNN / Autoencoder)
+│   ├── evaluate.py                     # AUC metrics, patient-level evaluation
+│   ├── patient_aggregation.py          # Crowd-voting aggregation pipeline (NEW)
+│   └── explainability.py               # Occlusion sensitivity analysis
 │
 ├── results/                            # Saved outputs
 │   ├── roc_curves/
@@ -108,7 +110,7 @@ Genomic-RawSeq-Analyzer/
 └── README.md
 ```
 
-> ⚠️ `src/` is currently under active development as part of Semester 2 refactoring ([Issue #1](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/1)).
+> `train.py` automatically runs both read-level and patient-level evaluation when `run_ids` are present in the batch data.
 
 ---
 
@@ -200,14 +202,44 @@ If Patient Score > threshold → Cancer
 
 This transforms a weak per-read AUC of 0.615 into a strong patient-level diagnosis.
 
+**Standalone usage:**
+
+```bash
+# Run patient-level aggregation with saved model and batches
+python src/patient_aggregation.py \
+    --model_path results/cnn_baseline.keras \
+    --batch_dir data/batches/ \
+    --threshold 0.5 \
+    --save_dir results/patient_aggregation/
+```
+
+**Programmatic usage:**
+
+```python
+from patient_aggregation import CrowdVotingAggregator
+
+agg = CrowdVotingAggregator(probs, y_test, run_ids_test)
+
+# Full report: per-patient table, box plot, ROC, threshold sweep
+result = agg.full_report(read_auc=0.615, save_dir="results/")
+
+# Or step by step:
+result = agg.run(threshold=0.5)         # metrics dict
+agg.comparison_table(read_auc=0.615)    # read vs patient AUC
+agg.plot_boxplot()                       # Cancer vs Normal distributions
+agg.plot_threshold_sweep()               # find optimal threshold
+```
+
+> **Note:** Batch files must include `run_ids` (re-run `data_loader.py` with the updated version if using legacy batches).
+
 ---
 
 ## 🗓️ Semester 2 Roadmap
 
 | Issue | Task | Assignee | Status |
 |-------|------|----------|--------|
-| [#1](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/1) | Refactor notebooks → modular Python scripts | Both | 🔄 In Progress |
-| [#2](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/2) | Patient-level aggregation pipeline | Osman | 📋 Planned |
+| [#1](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/1) | Refactor notebooks → modular Python scripts | Both | ✅ Done |
+| [#2](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/2) | Patient-level aggregation pipeline | Osman | ✅ Done |
 | [#3](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/3) | DNABERT-2 integration | Nuri | 📋 Planned |
 | [#4](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/4) | DNABERT-2 vs CNN benchmark | Both | 📋 Planned |
 | [#5](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/5) | LLAMA-3 report generation module | Nuri | 📋 Planned |

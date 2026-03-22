@@ -287,7 +287,7 @@ if __name__ == "__main__":
     model = load_model(args.model_path)
 
     print("Loading data...")
-    X, y = DataLoader.load_all_batches(args.batch_dir)
+    X, y, _run_ids = DataLoader.load_all_batches(args.batch_dir)
     X_cancer = X[y == 1]
     print(f"Cancer reads: {len(X_cancer):,}")
 

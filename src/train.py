@@ -37,18 +37,26 @@ def train_cnn(batch_dir: str, output_dir: str, epochs: int = 5):
 
     # ── Load data ──
     print("Loading batch data...")
-    X, y = DataLoader.load_all_batches(batch_dir)
+    X, y, run_ids = DataLoader.load_all_batches(batch_dir)
 
     print(f"\nDataset stats:")
     print(f"  Total reads : {len(X):,}")
     print(f"  Tumor       : {sum(y == 1):,}  ({sum(y == 1) / len(y) * 100:.1f}%)")
     print(f"  Normal      : {sum(y == 0):,}  ({sum(y == 0) / len(y) * 100:.1f}%)")
+    if run_ids is not None:
+        print(f"  Patients    : {len(np.unique(run_ids))}")
 
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=0.2, random_state=42, stratify=y
+    # Stratified split (preserving run_ids alignment)
+    indices = np.arange(len(X))
+    train_idx, test_idx = train_test_split(
+        indices, test_size=0.2, random_state=42, stratify=y
     )
 
-    del X, y   # free RAM
+    X_train, X_test = X[train_idx], X[test_idx]
+    y_train, y_test = y[train_idx], y[test_idx]
+    run_ids_test = run_ids[test_idx] if run_ids is not None else None
+
+    del X, y, run_ids, indices
     import gc; gc.collect()
 
     # ── Build & train ──
@@ -83,8 +91,8 @@ def train_cnn(batch_dir: str, output_dir: str, epochs: int = 5):
     # ── Plot training history ──
     _plot_history(history, output_dir)
 
-    # ── Evaluate ──
-    evaluator = Evaluator(model, X_test, y_test)
+    # ── Evaluate (with patient-level aggregation if run_ids available) ──
+    evaluator = Evaluator(model, X_test, y_test, run_ids=run_ids_test)
     evaluator.full_report(save_dir=os.path.join(output_dir, "evaluation"))
 
     return model
