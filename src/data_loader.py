@@ -251,33 +251,35 @@ class DataLoader:
     # ── Private ─────────────────────────────────────────────
 
     def _download_and_parse(self, run_id: str) -> list:
-        """Download one SRA run, parse FASTQ, return list of encoded reads."""
+        """Stream one SRA run, parse FASTQ, return list of encoded reads."""
+        import subprocess
+        
         url = _build_ftp_url(run_id)
-        local_path = f"{run_id}_1.fastq.gz"
         reads = []
 
         try:
-            exit_code = os.system(f"curl -s '{url}' -o '{local_path}'")
-            if (
-                exit_code != 0
-                or not os.path.exists(local_path)
-                or os.path.getsize(local_path) < 1000
-            ):
-                logger.warning(f"  Download failed for {run_id}.")
-                return []
-
-            with gzip.open(local_path, "rt") as handle:
+            # Stream the remote gzip file into BioPython memory
+            curl_p = subprocess.Popen(
+                ["curl", "-s", "-f", url], 
+                stdout=subprocess.PIPE
+            )
+            
+            with gzip.open(curl_p.stdout, "rt") as handle:
                 for record in SeqIO.parse(handle, "fastq"):
                     reads.append(seq_to_int(str(record.seq), self.max_len))
                     if len(reads) >= self.reads_per_file:
                         break
+            
+            curl_p.terminate()
+            curl_p.wait(timeout=5)
+            
+            if not reads:
+                logger.warning(f"  Download failed or no reads found for {run_id}.")
 
         except Exception as e:
             logger.error(f"  Error on {run_id}: {e}")
-
-        finally:
-            if os.path.exists(local_path):
-                os.remove(local_path)
+            if 'curl_p' in locals():
+                curl_p.terminate()
 
         return reads
 

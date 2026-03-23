@@ -1,0 +1,249 @@
+((venv) ) nuribasar@192 492 % python3 src/train.py --model cnn --batch_dir results/batches --output_dir results --epochs 5
+
+Loading batch data...
+[INFO]   Loaded batch_001.npz
+[INFO]   Loaded batch_002.npz
+[INFO]   Loaded batch_003.npz
+[INFO]   Loaded batch_004.npz
+[INFO]   Loaded batch_005.npz
+[INFO]   Loaded batch_006.npz
+[INFO]   Loaded batch_007.npz
+[INFO]   Loaded batch_008.npz
+[INFO]   Loaded batch_009.npz
+[INFO] Total: X=(1800000, 80)  y=(1800000,)  (Normal=700,000  Tumor=1,100,000)
+[INFO]   run_ids loaded: 36 unique patients
+
+Dataset stats:
+  Total reads : 1,800,000
+  Tumor       : 1,100,000  (61.1%)
+  Normal      : 700,000  (38.9%)
+  Patients    : 36
+
+Building model...
+/Users/nuribasar/Desktop/Fourth year/Eight Semester/492/venv/lib/python3.12/site-packages/keras/src/layers/core/embedding.py:100: UserWarning: Argument `input_length` is deprecated. Just remove it.
+  warnings.warn(
+Model: "1D_CNN_Baseline"
+┏━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━━━━━━━━━━━━━┳━━━━━━━━━━━━━━━━━┓
+┃ Layer (type)                         ┃ Output Shape                ┃         Param # ┃
+┡━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━━━━━━━━━━━━━╇━━━━━━━━━━━━━━━━━┩
+│ nucleotide_embedding (Embedding)     │ ?                           │     0 (unbuilt) │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv1_motif (Conv1D)                 │ ?                           │     0 (unbuilt) │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ maxpool1 (MaxPooling1D)              │ ?                           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ conv2_features (Conv1D)              │ ?                           │     0 (unbuilt) │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ global_maxpool (GlobalMaxPooling1D)  │ ?                           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dense (Dense)                        │ ?                           │     0 (unbuilt) │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ dropout (Dropout)                    │ ?                           │               0 │
+├──────────────────────────────────────┼─────────────────────────────┼─────────────────┤
+│ output (Dense)                       │ ?                           │     0 (unbuilt) │
+└──────────────────────────────────────┴─────────────────────────────┴─────────────────┘
+ Total params: 0 (0.00 B)
+ Trainable params: 0 (0.00 B)
+ Non-trainable params: 0 (0.00 B)
+
+Training...
+Epoch 1/5
+11248/11250 ━━━━━━━━━━━━━━━━━━━━ 0s 5ms/step - accuracy: 0.6442 - loss: 0.6361       
+Epoch 1: val_loss improved from None to 0.62423, saving model to results/cnn_checkpoint.keras
+
+Epoch 1: finished saving model to results/cnn_checkpoint.keras
+11250/11250 ━━━━━━━━━━━━━━━━━━━━ 64s 6ms/step - accuracy: 0.6501 - loss: 0.6288 - val_accuracy: 0.6535 - val_loss: 0.6242
+Epoch 2/5
+11245/11250 ━━━━━━━━━━━━━━━━━━━━ 0s 5ms/step - accuracy: 0.6541 - loss: 0.6239   
+Epoch 2: val_loss improved from 0.62423 to 0.62244, saving model to results/cnn_checkpoint.keras
+
+Epoch 2: finished saving model to results/cnn_checkpoint.keras
+11250/11250 ━━━━━━━━━━━━━━━━━━━━ 63s 6ms/step - accuracy: 0.6537 - loss: 0.6238 - val_accuracy: 0.6549 - val_loss: 0.6224
+Epoch 3/5
+11242/11250 ━━━━━━━━━━━━━━━━━━━━ 0s 5ms/step - accuracy: 0.6547 - loss: 0.6223   
+Epoch 3: val_loss improved from 0.62244 to 0.62194, saving model to results/cnn_checkpoint.keras
+
+Epoch 3: finished saving model to results/cnn_checkpoint.keras
+11250/11250 ━━━━━━━━━━━━━━━━━━━━ 63s 6ms/step - accuracy: 0.6544 - loss: 0.6224 - val_accuracy: 0.6549 - val_loss: 0.6219
+Epoch 4/5
+11240/11250 ━━━━━━━━━━━━━━━━━━━━ 0s 5ms/step - accuracy: 0.6551 - loss: 0.6219   
+Epoch 4: val_loss improved from 0.62194 to 0.62160, saving model to results/cnn_checkpoint.keras
+
+Epoch 4: finished saving model to results/cnn_checkpoint.keras
+11250/11250 ━━━━━━━━━━━━━━━━━━━━ 62s 5ms/step - accuracy: 0.6549 - loss: 0.6217 - val_accuracy: 0.6552 - val_loss: 0.6216
+Epoch 5/5
+11249/11250 ━━━━━━━━━━━━━━━━━━━━ 0s 5ms/step - accuracy: 0.6550 - loss: 0.6214   
+Epoch 5: val_loss improved from 0.62160 to 0.62131, saving model to results/cnn_checkpoint.keras
+
+Epoch 5: finished saving model to results/cnn_checkpoint.keras
+11250/11250 ━━━━━━━━━━━━━━━━━━━━ 61s 5ms/step - accuracy: 0.6553 - loss: 0.6213 - val_accuracy: 0.6559 - val_loss: 0.6213
+Restoring model weights from the end of the best epoch: 5.
+
+Model saved: results/cnn_baseline.keras
+Saved training history: results/training_history.png
+
+============================================================
+EVALUATION REPORT
+============================================================
+Running inference...
+176/176 ━━━━━━━━━━━━━━━━━━━━ 3s 15ms/step 
+Inference time: 2.8s
+
+Read-level AUC: 0.6157
+Saved ROC curve: results/evaluation/roc_read_level.png
+
+Prediction distributions:
+  Mean P(cancer | Normal reads): 0.5487
+  Mean P(cancer | Tumor  reads): 0.6285
+  Separation gap:                0.0798
+  → Signal DETECTED — aggregation will work!
+Saved: results/evaluation/prediction_distribution.png
+
+Classification Metrics (threshold=0.5):
+  threshold: 0.5000
+  accuracy: 0.6559
+  precision: 0.6452
+  recall: 0.9710
+  f1: 0.7752
+  auc: 0.6157
+
+Patient-level aggregation (crowd-voting):
+  Patients evaluated : 36
+    Normal patients  : 14
+    Tumor patients   : 22
+  Reads per patient  : 10000 (mean)
+  Patient-level AUC  : 0.9156
+  Threshold          : 0.5
+  Accuracy           : 0.6389
+  Precision          : 0.6286
+  Recall             : 1.0000
+  F1 Score           : 0.7719
+
+  Per-patient breakdown:
+    ERR166306  P(cancer)=0.6425  true=TUMOR   pred=TUMOR   reads=10,045  ✓
+    ERR166314  P(cancer)=0.6405  true=TUMOR   pred=TUMOR   reads=9,953  ✓
+    ERR166304  P(cancer)=0.6379  true=TUMOR   pred=TUMOR   reads=10,017  ✓
+    ERR166308  P(cancer)=0.6375  true=TUMOR   pred=TUMOR   reads=10,018  ✓
+    ERR166302  P(cancer)=0.6366  true=TUMOR   pred=TUMOR   reads=9,985  ✓
+    ERR166320  P(cancer)=0.6347  true=NORMAL  pred=TUMOR   reads=10,039  ✗
+    ERR166312  P(cancer)=0.6334  true=TUMOR   pred=TUMOR   reads=9,993  ✓
+    ERR166313  P(cancer)=0.6282  true=TUMOR   pred=TUMOR   reads=10,006  ✓
+    ERR166310  P(cancer)=0.6272  true=TUMOR   pred=TUMOR   reads=10,079  ✓
+    ERR166336  P(cancer)=0.6264  true=TUMOR   pred=TUMOR   reads=10,083  ✓
+    ERR166330  P(cancer)=0.6257  true=TUMOR   pred=TUMOR   reads=10,041  ✓
+    ERR166332  P(cancer)=0.6255  true=TUMOR   pred=TUMOR   reads=10,028  ✓
+    ERR166309  P(cancer)=0.6253  true=TUMOR   pred=TUMOR   reads=9,950  ✓
+    ERR166307  P(cancer)=0.6251  true=TUMOR   pred=TUMOR   reads=10,198  ✓
+    ERR166319  P(cancer)=0.6250  true=NORMAL  pred=TUMOR   reads=9,795  ✗
+    ERR166334  P(cancer)=0.6247  true=TUMOR   pred=TUMOR   reads=9,799  ✓
+    ERR166311  P(cancer)=0.6247  true=TUMOR   pred=TUMOR   reads=9,966  ✓
+    ERR166337  P(cancer)=0.6244  true=TUMOR   pred=TUMOR   reads=10,044  ✓
+    ERR166335  P(cancer)=0.6242  true=TUMOR   pred=TUMOR   reads=10,033  ✓
+    ERR166303  P(cancer)=0.6238  true=TUMOR   pred=TUMOR   reads=9,998  ✓
+    ERR166305  P(cancer)=0.6237  true=TUMOR   pred=TUMOR   reads=9,850  ✓
+    ERR166333  P(cancer)=0.6237  true=TUMOR   pred=TUMOR   reads=9,956  ✓
+    ERR166331  P(cancer)=0.6235  true=TUMOR   pred=TUMOR   reads=9,940  ✓
+    ERR166315  P(cancer)=0.6235  true=TUMOR   pred=TUMOR   reads=10,018  ✓
+    ERR166321  P(cancer)=0.6230  true=NORMAL  pred=TUMOR   reads=10,057  ✗
+    ERR166318  P(cancer)=0.6222  true=NORMAL  pred=TUMOR   reads=10,133  ✗
+    ERR166325  P(cancer)=0.6215  true=NORMAL  pred=TUMOR   reads=10,099  ✗
+    ERR166328  P(cancer)=0.5780  true=NORMAL  pred=TUMOR   reads=9,940  ✗
+    ERR166326  P(cancer)=0.5738  true=NORMAL  pred=TUMOR   reads=10,087  ✗
+    ERR166327  P(cancer)=0.5713  true=NORMAL  pred=TUMOR   reads=9,832  ✗
+    ERR166329  P(cancer)=0.5698  true=NORMAL  pred=TUMOR   reads=10,000  ✗
+    ERR166317  P(cancer)=0.5663  true=NORMAL  pred=TUMOR   reads=10,163  ✗
+    ERR166316  P(cancer)=0.5651  true=NORMAL  pred=TUMOR   reads=10,024  ✗
+    ERR166322  P(cancer)=0.5647  true=NORMAL  pred=TUMOR   reads=10,068  ✗
+    ERR166323  P(cancer)=0.5620  true=NORMAL  pred=TUMOR   reads=9,835  ✗
+    ERR166324  P(cancer)=0.0000  true=NORMAL  pred=NORMAL  reads=9,928  ✓
+Saved: results/evaluation/patient_level_roc.png
+Saved: results/evaluation/patient_level_boxplot.png
+
+============================================================
+SUMMARY
+============================================================
+  Read-level AUC:    0.6157
+  Patient-level AUC: 0.9156
+  AUC improvement:   +0.2998  (↑ crowd-voting helps!)
+============================================================
+
+((venv) ) nuribasar@192 492 % python3 src/patient_aggregation.py \
+    --model_path results/cnn_baseline.keras \
+    --batch_dir results/batches \
+    --save_dir results/patient_agg
+
+Loading model...
+Loading data...
+[INFO]   Loaded batch_001.npz
+[INFO]   Loaded batch_002.npz
+[INFO]   Loaded batch_003.npz
+[INFO]   Loaded batch_004.npz
+[INFO]   Loaded batch_005.npz
+[INFO]   Loaded batch_006.npz
+[INFO]   Loaded batch_007.npz
+[INFO]   Loaded batch_008.npz
+[INFO]   Loaded batch_009.npz
+[INFO] Total: X=(1800000, 80)  y=(1800000,)  (Normal=700,000  Tumor=1,100,000)
+[INFO]   run_ids loaded: 36 unique patients
+Running inference...
+176/176 ━━━━━━━━━━━━━━━━━━━━ 3s 15ms/step  
+Read-level AUC: 0.6157
+
+============================================================
+PATIENT-LEVEL AGGREGATION REPORT
+============================================================
+
+Per-patient breakdown:
+  ERR166306  P(cancer)=0.6425  true=TUMOR   pred=TUMOR   reads=10,045  ✓
+  ERR166314  P(cancer)=0.6405  true=TUMOR   pred=TUMOR   reads=9,953  ✓
+  ERR166304  P(cancer)=0.6379  true=TUMOR   pred=TUMOR   reads=10,017  ✓
+  ERR166308  P(cancer)=0.6375  true=TUMOR   pred=TUMOR   reads=10,018  ✓
+  ERR166302  P(cancer)=0.6366  true=TUMOR   pred=TUMOR   reads=9,985  ✓
+  ERR166320  P(cancer)=0.6347  true=NORMAL  pred=TUMOR   reads=10,039  ✗
+  ERR166312  P(cancer)=0.6334  true=TUMOR   pred=TUMOR   reads=9,993  ✓
+  ERR166313  P(cancer)=0.6282  true=TUMOR   pred=TUMOR   reads=10,006  ✓
+  ERR166310  P(cancer)=0.6272  true=TUMOR   pred=TUMOR   reads=10,079  ✓
+  ERR166336  P(cancer)=0.6264  true=TUMOR   pred=TUMOR   reads=10,083  ✓
+  ERR166330  P(cancer)=0.6257  true=TUMOR   pred=TUMOR   reads=10,041  ✓
+  ERR166332  P(cancer)=0.6255  true=TUMOR   pred=TUMOR   reads=10,028  ✓
+  ERR166309  P(cancer)=0.6253  true=TUMOR   pred=TUMOR   reads=9,950  ✓
+  ERR166307  P(cancer)=0.6251  true=TUMOR   pred=TUMOR   reads=10,198  ✓
+  ERR166319  P(cancer)=0.6250  true=NORMAL  pred=TUMOR   reads=9,795  ✗
+  ERR166334  P(cancer)=0.6247  true=TUMOR   pred=TUMOR   reads=9,799  ✓
+  ERR166311  P(cancer)=0.6247  true=TUMOR   pred=TUMOR   reads=9,966  ✓
+  ERR166337  P(cancer)=0.6244  true=TUMOR   pred=TUMOR   reads=10,044  ✓
+  ERR166335  P(cancer)=0.6242  true=TUMOR   pred=TUMOR   reads=10,033  ✓
+  ERR166303  P(cancer)=0.6238  true=TUMOR   pred=TUMOR   reads=9,998  ✓
+  ERR166305  P(cancer)=0.6237  true=TUMOR   pred=TUMOR   reads=9,850  ✓
+  ERR166333  P(cancer)=0.6237  true=TUMOR   pred=TUMOR   reads=9,956  ✓
+  ERR166331  P(cancer)=0.6235  true=TUMOR   pred=TUMOR   reads=9,940  ✓
+  ERR166315  P(cancer)=0.6235  true=TUMOR   pred=TUMOR   reads=10,018  ✓
+  ERR166321  P(cancer)=0.6230  true=NORMAL  pred=TUMOR   reads=10,057  ✗
+  ERR166318  P(cancer)=0.6222  true=NORMAL  pred=TUMOR   reads=10,133  ✗
+  ERR166325  P(cancer)=0.6215  true=NORMAL  pred=TUMOR   reads=10,099  ✗
+  ERR166328  P(cancer)=0.5780  true=NORMAL  pred=TUMOR   reads=9,940  ✗
+  ERR166326  P(cancer)=0.5738  true=NORMAL  pred=TUMOR   reads=10,087  ✗
+  ERR166327  P(cancer)=0.5713  true=NORMAL  pred=TUMOR   reads=9,832  ✗
+  ERR166329  P(cancer)=0.5698  true=NORMAL  pred=TUMOR   reads=10,000  ✗
+  ERR166317  P(cancer)=0.5663  true=NORMAL  pred=TUMOR   reads=10,163  ✗
+  ERR166316  P(cancer)=0.5651  true=NORMAL  pred=TUMOR   reads=10,024  ✗
+  ERR166322  P(cancer)=0.5647  true=NORMAL  pred=TUMOR   reads=10,068  ✗
+  ERR166323  P(cancer)=0.5620  true=NORMAL  pred=TUMOR   reads=9,835  ✗
+  ERR166324  P(cancer)=0.0000  true=NORMAL  pred=NORMAL  reads=9,928  ✓
+
+Confusion Matrix (threshold=0.5):
+  TN=1  FP=13
+  FN=0  TP=22
+
+==================================================
+  READ-LEVEL vs PATIENT-LEVEL COMPARISON
+==================================================
+                     Level    AUC
+                Read-level 0.6157
+Patient-level (aggregated) 0.9156
+
+  Improvement: +0.2998
+==================================================
+Saved: results/patient_agg/patient_boxplot.png
+Saved: results/patient_agg/patient_roc.png
+Saved: results/patient_agg/threshold_sweep.png
