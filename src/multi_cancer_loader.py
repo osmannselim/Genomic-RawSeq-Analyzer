@@ -73,43 +73,28 @@ Usage:
 """
 
 import os
-import sys
-import argparse
+import glob
 import numpy as np
 import pandas as pd
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+from sklearn.metrics import roc_curve, auc, precision_recall_fscore_support
 
-_HERE = os.path.dirname(os.path.abspath(__file__))
-sys.path.insert(0, _HERE)
 
-from data_loader import DataLoader
-
-# ── Cohort metadata ───────────────────────────────────────────────────────────
-# Source: NCBI SRA / GEO
-# Each entry: SRA run accession → binary label (1=Tumor, 0=Normal)
-#
-# To add a new cohort:
-#   1. Search https://www.ncbi.nlm.nih.gov/sra with query:
-#      "cancer_type[Organism] AND WXS[Strategy] AND Homo sapiens[Organism]"
-#   2. Download the SraRunTable.txt for the SRP accession
-#   3. Add entries below using assign_labels_from_sra_table()
+# ── Cohort metadata ───────────────────────────────────────────────────
 
 COHORT_METADATA = {
-    # ── BRCA: GSE48215 / SRP028580 ───────────────────────────────────────
-    # 25 matched Tumor/Normal pairs, WXS, Illumina HiSeq
-    # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE48215
-    "brca": {
-        "geo_accession": "GSE48215",
-        "sra_project":   "SRP028580",
-        "cancer_label":  "Breast Invasive Carcinoma (BRCA)",
-        "n_tumor":       25,
-        "n_normal":      25,
-        # Subset of run accessions (fill from SraRunTable.txt after download)
-        # Format: {"SRR_ACCESSION": label}  1=Tumor, 0=Normal
-        "runs": {
-            # Populate from: https://trace.ncbi.nlm.nih.gov/Traces/sra/?study=SRP028580
-            # Example entries — replace with actual accessions from SraRunTable.txt:
-            "SRR975960": 1, "SRR975961": 1, "SRR975962": 1, "SRR975963": 1,
-            "SRR975964": 1, "SRR975965": 0, "SRR975966": 0, "SRR975967": 0,
+    'brca': {
+        'cancer_label': 'Breast Invasive Carcinoma (BRCA)',
+        'geo_accession': 'GSE48215',
+        'sra_project':   'SRP028580',
+        'n_tumor':  25,
+        'n_normal': 25,
+        'runs': {
+            # 8-sample hardcoded fallback (4 tumor, 4 normal)
+            'SRR949537': 1, 'SRR949538': 1, 'SRR949539': 1, 'SRR949540': 1,
+            'SRR949541': 0, 'SRR949542': 0, 'SRR949543': 0, 'SRR949544': 0,
         },
     },
 
@@ -211,74 +196,11 @@ def class_balance_report(batch_dir: str, cancer_label: str = 'Cancer') -> None:
 =======
 def assign_labels_from_sra_table(sra_table_path: str) -> pd.DataFrame:
     """
-    Parse a downloaded SraRunTable.txt (from NCBI SRA Run Selector) and
-    extract Run accessions + Tumor/Normal labels.
+    Parse an NCBI SraRunTable.txt and assign binary labels.
 
-    The SRA Run Selector exports a CSV with columns including:
-        Run, source_name (or tissue_type), LibraryStrategy, ...
-
-    Returns DataFrame with columns: Run, Label (1=Tumor, 0=Normal)
-    """
-    df = pd.read_csv(sra_table_path)
-
-    # Common column names for tumor/normal annotation in SRA tables
-    label_col = None
-    for col in ["source_name", "tissue_type", "Sample_Name", "phenotype",
-                "disease_state", "tumor_tissue_site"]:
-        if col in df.columns:
-            label_col = col
-            break
-
-    if label_col is None:
-        raise ValueError(
-            f"Could not find a tissue/disease column in {sra_table_path}. "
-            f"Available columns: {list(df.columns)}"
-        )
-
-    tumor_keywords  = ["tumor", "tumour", "cancer", "malignant", "primary"]
-    normal_keywords = ["normal", "healthy", "adjacent", "non-tumor", "control"]
-
-    def parse_label(val: str) -> int:
-        v = str(val).lower()
-        if any(k in v for k in tumor_keywords):
-            return 1
-        if any(k in v for k in normal_keywords):
-            return 0
-        return -1  # unknown
-
-    df["Label"] = df[label_col].apply(parse_label)
-    unknown = (df["Label"] == -1).sum()
-    if unknown > 0:
-        print(f"  Warning: {unknown} samples with unrecognised tissue label — review manually.")
-        df = df[df["Label"] != -1]
-
-    result = df[["Run", "Label"]].copy()
-    print(f"  Parsed {len(result)} samples: "
-          f"{(result['Label']==1).sum()} tumor, "
-          f"{(result['Label']==0).sum()} normal")
-    return result
-
-
-def download_and_process_cohort(
-    cancer_type: str,
-    output_dir: str,
-    max_reads_per_sample: int = 50_000,
-    sra_table_path: str = None,
-) -> str:
-    """
-    Download and preprocess one cancer cohort using the existing DataLoader pipeline.
-
-    Parameters
-    ----------
-    cancer_type : str
-        One of "brca", "luad" (must be a key in COHORT_METADATA).
-    output_dir : str
-        Directory to save .npz batch files.
-    max_reads_per_sample : int
-        Reads per SRA run to download (matches Semester 1 default of 50,000).
-    sra_table_path : str, optional
-        Path to a downloaded SraRunTable.txt from NCBI Run Selector.
-        If provided, overrides the hardcoded run dict in COHORT_METADATA.
+    Heuristic: rows where sample_type / tissue_type / source_name contains
+    'tumor' or 'cancer' → label 1; 'normal' or 'healthy' → label 0.
+    Rows that cannot be classified are dropped with a warning.
 
     Returns
     -------
@@ -414,52 +336,49 @@ def zero_shot_eval(
 =======
     cancer_label: str = "Unknown",
     save_dir: str = None,
-):
+) -> dict:
     """
-    Evaluate the Semester 1 CNN (trained on WXS breast cancer) on a new cohort
-    without any retraining — zero-shot transfer performance.
+    Load the Semester 1 CNN and evaluate it zero-shot on a new cohort.
 
-    Computes read-level and patient-level AUC, prints the benchmark table,
-    and saves ROC curves to save_dir.
+    Produces read-level and patient-level ROC curves, prints a summary table,
+    and saves plots to save_dir.
+
+    Returns
+    -------
+    dict with keys: read_auc, patient_auc, precision, recall, f1
     """
-    import matplotlib
-    matplotlib.use("Agg")
-
     from tensorflow.keras.models import load_model
-    from evaluate import Evaluator
+    from data_loader import DataLoader
 
-    print(f"\n{'=' * 60}")
-    print(f"ZERO-SHOT EVALUATION: {cancer_label}")
-    print(f"{'=' * 60}")
+    if save_dir:
+        os.makedirs(save_dir, exist_ok=True)
 
-    print("Loading model...")
+    print(f'Loading model from {model_path} ...')
     model = load_model(model_path)
 
-    print("Loading cohort batches...")
+    print(f'Loading batches from {batch_dir} ...')
     X, y, run_ids = DataLoader.load_all_batches(batch_dir)
-    print(f"  {len(X):,} reads  |  "
-          f"tumor={int(y.sum()):,}  normal={int((y==0).sum()):,}")
 
-    evaluator = Evaluator(model, X, y, run_ids=run_ids)
-    evaluator.full_report(save_dir=save_dir)
+    print('Running inference ...')
+    probs = model.predict(X, batch_size=2048, verbose=1).flatten()
 
+    # Read-level
+    fpr, tpr, _ = roc_curve(y, probs)
+    read_auc = auc(fpr, tpr)
+    prec, rec, f1, _ = precision_recall_fscore_support(
+        y, (probs >= 0.5).astype(int), average='binary', zero_division=0)
 
-def class_balance_report(batch_dir: str, cancer_label: str = ""):
-    """Print a class balance summary for a cohort batch directory."""
-    X, y, run_ids = DataLoader.load_all_batches(batch_dir)
-    unique, counts = np.unique(run_ids, return_counts=True)
-    patients_df = pd.DataFrame({"run_id": unique, "n_reads": counts})
-
-    # Infer per-patient label from majority vote
-    import pandas as _pd
-    df = _pd.DataFrame({"run_id": run_ids, "label": y})
-    pat_labels = df.groupby("run_id")["label"].apply(
-        lambda x: int(x.mode()[0])
-    ).reset_index(name="label")
-    patients_df = patients_df.merge(pat_labels, on="run_id")
-
-    n_tumor  = (patients_df["label"] == 1).sum()
-    n_normal = (patients_df["label"] == 0).sum()
+    # Patient-level crowd-voting
+    pat_auc = None
+    if run_ids is not None:
+        df = pd.DataFrame({'run_id': run_ids, 'prob': probs, 'label': y})
+        pat = df.groupby('run_id').agg(
+            patient_prob=('prob', 'mean'),
+            patient_label=('label', lambda x: int(x.mode()[0])),
+        ).reset_index()
+        if len(pat['patient_label'].unique()) > 1:
+            fpr_p, tpr_p, _ = roc_curve(pat['patient_label'], pat['patient_prob'])
+            pat_auc = auc(fpr_p, tpr_p)
 
     print(f"\nClass Balance — {cancer_label or batch_dir}")
     print(f"  Total reads   : {len(X):,}")
