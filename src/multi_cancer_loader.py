@@ -1,6 +1,5 @@
 """
 multi_cancer_loader.py
-<<<<<<< HEAD
 ----------------------
 Helpers for the MultiCancerData notebook (Semester 2).
 
@@ -43,81 +42,11 @@ COHORT_METADATA = {
             # 8-sample hardcoded fallback (4 tumor, 4 normal)
             'SRR521456': 1, 'SRR521457': 1, 'SRR521458': 1, 'SRR521459': 1,
             'SRR521460': 0, 'SRR521461': 0, 'SRR521462': 0, 'SRR521463': 0,
-=======
------------------------
-Dataset expansion: download and preprocess BRCA and LUAD WXS cohorts from NCBI SRA.
-
-Extends the Semester 1 pipeline (single breast-cancer cohort) to support
-multi-cancer generalisability testing as described in Chapter 9.3.
-
-Cohorts targeted:
-  BRCA — Breast Cancer (WXS)  — GEO: GSE48215  / SRA: SRP028580
-  LUAD — Lung Adenocarcinoma  — GEO: GSE40419  / SRA: SRP013469
-
-Both cohorts use the same ERR/SRR accession → Tumor/Normal label convention.
-The existing data_loader.py pipeline handles download + encoding unchanged.
-
-Usage:
-    # 1. Download SRA run lists (see COHORT_METADATA below for accession links)
-    # 2. Run this script to process and save batches per cancer type
-    python src/multi_cancer_loader.py \
-        --cancer_type brca \
-        --output_dir  results/multi_cancer/brca \
-        --max_reads_per_sample 50000
-
-    # 3. Zero-shot CNN evaluation on new cohort
-    python src/multi_cancer_loader.py \
-        --cancer_type luad \
-        --output_dir  results/multi_cancer/luad \
-        --eval_model  results/cnn_baseline.keras
-"""
-
-import os
-import glob
-import numpy as np
-import pandas as pd
-import matplotlib
-matplotlib.use('Agg')
-import matplotlib.pyplot as plt
-from sklearn.metrics import roc_curve, auc, precision_recall_fscore_support
-
-
-# ── Cohort metadata ───────────────────────────────────────────────────
-
-COHORT_METADATA = {
-    'brca': {
-        'cancer_label': 'Breast Invasive Carcinoma (BRCA)',
-        'geo_accession': 'GSE48215',
-        'sra_project':   'SRP028580',
-        'n_tumor':  25,
-        'n_normal': 25,
-        'runs': {
-            # 8-sample hardcoded fallback (4 tumor, 4 normal)
-            'SRR949537': 1, 'SRR949538': 1, 'SRR949539': 1, 'SRR949540': 1,
-            'SRR949541': 0, 'SRR949542': 0, 'SRR949543': 0, 'SRR949544': 0,
-        },
-    },
-
-    # ── LUAD: GSE40419 / SRP013469 ───────────────────────────────────────
-    # 17 Tumor / 13 Normal, WXS, Illumina HiSeq
-    # https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi?acc=GSE40419
-    "luad": {
-        "geo_accession": "GSE40419",
-        "sra_project":   "SRP013469",
-        "cancer_label":  "Lung Adenocarcinoma (LUAD)",
-        "n_tumor":       17,
-        "n_normal":      13,
-        "runs": {
-            # Populate from SraRunTable.txt after download:
-            "SRR521284": 1, "SRR521285": 1, "SRR521286": 1, "SRR521287": 1,
-            "SRR521288": 1, "SRR521289": 0, "SRR521290": 0, "SRR521291": 0,
->>>>>>> 8a9d340 (feat: implement multi-cancer dataset expansion, occlusion analysis, and cross-cohort benchmark comparison tools)
         },
     },
 }
 
 
-<<<<<<< HEAD
 # ── SraRunTable parser ────────────────────────────────────────────────
 
 def assign_labels_from_sra_table(table_path: str) -> pd.DataFrame:
@@ -193,54 +122,10 @@ def class_balance_report(batch_dir: str, cancer_label: str = 'Cancer') -> None:
 
 
 # ── Zero-shot evaluation ──────────────────────────────────────────────
-=======
-def assign_labels_from_sra_table(sra_table_path: str) -> pd.DataFrame:
-    """
-    Parse an NCBI SraRunTable.txt and assign binary labels.
-
-    Heuristic: rows where sample_type / tissue_type / source_name contains
-    'tumor' or 'cancer' → label 1; 'normal' or 'healthy' → label 0.
-    Rows that cannot be classified are dropped with a warning.
-
-    Returns
-    -------
-    str : output_dir path
-    """
-    if cancer_type not in COHORT_METADATA:
-        raise ValueError(f"Unknown cancer_type '{cancer_type}'. "
-                         f"Choose from: {list(COHORT_METADATA)}")
-
-    meta = COHORT_METADATA[cancer_type]
-    print(f"\n{'=' * 60}")
-    print(f"COHORT: {meta['cancer_label']}")
-    print(f"GEO   : {meta['geo_accession']}  |  SRA: {meta['sra_project']}")
-    print(f"{'=' * 60}")
-
-    # Build run DataFrame
-    if sra_table_path:
-        run_df = assign_labels_from_sra_table(sra_table_path)
-    else:
-        run_df = pd.DataFrame([
-            {"Run": acc, "Label": lbl}
-            for acc, lbl in meta["runs"].items()
-        ])
-
-    print(f"Runs to process: {len(run_df)}  "
-          f"(tumor={int((run_df['Label']==1).sum())}, "
-          f"normal={int((run_df['Label']==0).sum())})")
-
-    os.makedirs(output_dir, exist_ok=True)
-    loader = DataLoader(output_dir=output_dir, max_reads=max_reads_per_sample)
-    loader.process_run_list(run_df)
-
-    return output_dir
-
->>>>>>> 8a9d340 (feat: implement multi-cancer dataset expansion, occlusion analysis, and cross-cohort benchmark comparison tools)
 
 def zero_shot_eval(
     model_path: str,
     batch_dir: str,
-<<<<<<< HEAD
     cancer_label: str = 'Cancer',
     save_dir: str = None,
 ) -> dict:
@@ -333,119 +218,3 @@ def zero_shot_eval(
         'recall': rec,
         'f1': f1,
     }
-=======
-    cancer_label: str = "Unknown",
-    save_dir: str = None,
-) -> dict:
-    """
-    Load the Semester 1 CNN and evaluate it zero-shot on a new cohort.
-
-    Produces read-level and patient-level ROC curves, prints a summary table,
-    and saves plots to save_dir.
-
-    Returns
-    -------
-    dict with keys: read_auc, patient_auc, precision, recall, f1
-    """
-    from tensorflow.keras.models import load_model
-    from data_loader import DataLoader
-
-    if save_dir:
-        os.makedirs(save_dir, exist_ok=True)
-
-    print(f'Loading model from {model_path} ...')
-    model = load_model(model_path)
-
-    print(f'Loading batches from {batch_dir} ...')
-    X, y, run_ids = DataLoader.load_all_batches(batch_dir)
-
-    print('Running inference ...')
-    probs = model.predict(X, batch_size=2048, verbose=1).flatten()
-
-    # Read-level
-    fpr, tpr, _ = roc_curve(y, probs)
-    read_auc = auc(fpr, tpr)
-    prec, rec, f1, _ = precision_recall_fscore_support(
-        y, (probs >= 0.5).astype(int), average='binary', zero_division=0)
-
-    # Patient-level crowd-voting
-    pat_auc = None
-    if run_ids is not None:
-        df = pd.DataFrame({'run_id': run_ids, 'prob': probs, 'label': y})
-        pat = df.groupby('run_id').agg(
-            patient_prob=('prob', 'mean'),
-            patient_label=('label', lambda x: int(x.mode()[0])),
-        ).reset_index()
-        if len(pat['patient_label'].unique()) > 1:
-            fpr_p, tpr_p, _ = roc_curve(pat['patient_label'], pat['patient_prob'])
-            pat_auc = auc(fpr_p, tpr_p)
-
-    print(f"\nClass Balance — {cancer_label or batch_dir}")
-    print(f"  Total reads   : {len(X):,}")
-    print(f"  Total patients: {len(patients_df)}")
-    print(f"  Tumor patients: {n_tumor}  ({100*n_tumor/len(patients_df):.1f}%)")
-    print(f"  Normal patients:{n_normal}  ({100*n_normal/len(patients_df):.1f}%)")
-    print(f"  Reads/patient  : {patients_df['n_reads'].mean():.0f} (mean)")
-    print(f"  Class ratio    : {int(y.sum()):,} tumor / {int((y==0).sum()):,} normal "
-          f"= {y.mean()*100:.1f}% tumor")
-    return patients_df
-
-
-# ── CLI ───────────────────────────────────────────────────────────────────────
-
-def parse_args():
-    p = argparse.ArgumentParser(
-        description="Download and process multi-cancer WXS cohorts from NCBI SRA."
-    )
-    p.add_argument("--cancer_type",  required=True, choices=list(COHORT_METADATA),
-                   help="Cancer cohort to process: brca or luad")
-    p.add_argument("--output_dir",   default=None,
-                   help="Output directory for .npz batches "
-                        "(default: results/multi_cancer/<cancer_type>)")
-    p.add_argument("--max_reads",    type=int, default=50_000,
-                   help="Reads per SRA sample to download")
-    p.add_argument("--sra_table",    default=None,
-                   help="Path to SraRunTable.txt from NCBI Run Selector "
-                        "(overrides hardcoded run list)")
-    p.add_argument("--eval_model",   default=None,
-                   help="Path to .keras model for zero-shot eval after download")
-    p.add_argument("--balance_only", action="store_true",
-                   help="Only print class balance for an existing batch_dir "
-                        "(skip download)")
-    return p.parse_args()
-
-
-def main():
-    args = parse_args()
-
-    output_dir = args.output_dir or os.path.join(
-        "results", "multi_cancer", args.cancer_type
-    )
-    meta = COHORT_METADATA[args.cancer_type]
-
-    if args.balance_only:
-        class_balance_report(output_dir, cancer_label=meta["cancer_label"])
-        return
-
-    batch_dir = download_and_process_cohort(
-        cancer_type=args.cancer_type,
-        output_dir=output_dir,
-        max_reads_per_sample=args.max_reads,
-        sra_table_path=args.sra_table,
-    )
-
-    class_balance_report(batch_dir, cancer_label=meta["cancer_label"])
-
-    if args.eval_model:
-        eval_dir = os.path.join(output_dir, "zero_shot_eval")
-        zero_shot_eval(
-            model_path=args.eval_model,
-            batch_dir=batch_dir,
-            cancer_label=meta["cancer_label"],
-            save_dir=eval_dir,
-        )
-
-
-if __name__ == "__main__":
-    main()
->>>>>>> 8a9d340 (feat: implement multi-cancer dataset expansion, occlusion analysis, and cross-cohort benchmark comparison tools)
