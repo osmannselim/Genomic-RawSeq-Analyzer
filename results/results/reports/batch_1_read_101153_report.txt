@@ -1,0 +1,35 @@
+======================================================================
+GENOMIC-RAWSEQ-ANALYZER — CLINICAL SUMMARY REPORT
+======================================================================
+Patient ID   : batch_1_read_101153
+Cancer Prob. : 0.9748  [HIGH RISK]
+Generated    : 2026-06-07 00:58
+DISCLAIMER   : Research use only. Not a clinical diagnosis.
+======================================================================
+
+PATIENT GENOMIC ANALYSIS REPORT
+================================
+
+**PATIENT SUMMARY**
+
+The patient's whole-exome sequencing (WXS) data has been analyzed using an alignment-free deep learning approach. The analysis indicates a high risk of cancer (probability: 0.9748).
+
+**MODEL EVIDENCE**
+
+The model uses a crowd-voting aggregation strategy to combine the predictions of multiple neural networks. This approach enables the identification of consensus motifs across the reads analyzed. The importance scores provided for each motif represent the collective confidence of the model in the presence of a potential cancer-related signal.
+
+**MOTIF ANALYSIS**
+
+The top occlusion-sensitivity motifs identified in the analysis are: AGGCT (positions 28-32), CATTC (positions 8-12), AGAAA (positions 6-10), ATGTA (positions 20-24), and TGGAA (positions 10-14). While these motifs do not have direct COSMIC associations, they may be indicative of potential cancer-related signals. Further analysis is required to determine the significance of these findings.
+
+**LIMITATIONS**
+
+The alignment-free approach used in this analysis is limited by its reliance on the quality and quantity of the input data. Additionally, the model's performance may be affected by the presence of technical artifacts or biological noise in the data.
+
+**RECOMMENDATION**
+
+Based on the results of this analysis, further investigation is recommended to determine the significance of the identified motifs and to explore potential associations with cancer. This may involve additional sequencing, functional analysis, or experimental validation.
+
+======================================================================
+END OF REPORT — batch_1_read_101153
+======================================================================

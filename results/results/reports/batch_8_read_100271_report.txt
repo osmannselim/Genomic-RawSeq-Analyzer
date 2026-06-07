@@ -1,0 +1,35 @@
+======================================================================
+GENOMIC-RAWSEQ-ANALYZER — CLINICAL SUMMARY REPORT
+======================================================================
+Patient ID   : batch_8_read_100271
+Cancer Prob. : 0.9734  [HIGH RISK]
+Generated    : 2026-06-07 00:58
+DISCLAIMER   : Research use only. Not a clinical diagnosis.
+======================================================================
+
+PATIENT GENOMIC ANALYSIS REPORT
+================================
+
+**PATIENT SUMMARY**
+
+The patient's whole-exome sequencing data indicates a high risk of cancer (0.9734 probability). The analysis is based on alignment-free deep learning methods applied to 1 read.
+
+**MODEL EVIDENCE**
+
+The model uses a crowd-voting aggregation approach to combine the predictions from multiple neural networks. This approach allows the model to identify the most confident and accurate predictions, which are then used to generate the final output.
+
+**MOTIF ANALYSIS**
+
+The top occlusion-sensitivity motifs identified in the analysis are: AGGCT (positions 28-32), CATTC (positions 8-12), AGAAA (positions 6-10), ATGTA (positions 20-24), and TGGAA (positions 10-14). These motifs are associated with known cancer-related genes and pathways in the COSMIC database.
+
+**LIMITATIONS**
+
+The analysis is based on a single read and may not be representative of the patient's entire genomic profile. Additionally, the alignment-free approach may not capture all potential genetic variations.
+
+**RECOMMENDATION**
+
+Further analysis of the patient's genomic data, including additional sequencing and validation, is recommended to confirm the presence and significance of the identified motifs. This may involve targeted sequencing or other methods to validate the findings.
+
+======================================================================
+END OF REPORT — batch_8_read_100271
+======================================================================
