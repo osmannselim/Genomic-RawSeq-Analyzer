@@ -22,8 +22,9 @@ scikit-learn>=1.4
 matplotlib>=3.8
 seaborn>=0.13
 
-# ── Transformers (Semester 2) ─────────────
-# Uncomment when starting Issue #3 (DNABERT-2 integration)
-# transformers>=4.40
-# torch>=2.2
-# accelerate>=0.28
+# ── Transformers / DNABERT-2 (Semester 2 — Issue #3) ──
+transformers>=4.40
+torch>=2.2
+accelerate>=0.28
+sentencepiece>=0.1.99    # required by DNABERT-2 BPE tokenizer
+einops>=0.7              # required by DNABERT-2 attention layers
