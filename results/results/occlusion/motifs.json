@@ -1,0 +1,36 @@
+{
+  "top_motifs": [
+    {
+      "position": 28,
+      "kmer": "AGGCT",
+      "score": 0.5478033423423767,
+      "cosmic_hits": []
+    },
+    {
+      "position": 8,
+      "kmer": "CATTC",
+      "score": 0.3951036036014557,
+      "cosmic_hits": []
+    },
+    {
+      "position": 6,
+      "kmer": "AGAAA",
+      "score": 0.3843434453010559,
+      "cosmic_hits": []
+    },
+    {
+      "position": 20,
+      "kmer": "ATGTA",
+      "score": 0.37349146604537964,
+      "cosmic_hits": []
+    },
+    {
+      "position": 10,
+      "kmer": "TGGAA",
+      "score": 0.37247219681739807,
+      "cosmic_hits": []
+    }
+  ],
+  "n_reads_used": 500,
+  "k": 5
+}
