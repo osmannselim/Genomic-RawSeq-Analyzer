@@ -322,7 +322,7 @@ Replaces the CNN's embedding + convolutional stack with a pretrained genomic lan
 | [#5](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/5) | LLAMA-3 report generation module | Nuri | ✅ Done |
 | [#6](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/6) | Multi-cancer dataset expansion (BRCA, LUAD) | Osman | ✅ Done |
 | [#7](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/7) | Aggregate occlusion sensitivity analysis | Nuri | ✅ Done |
-| [#8](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/8) | Final report & presentation | Both | 📋 In Progress |
+| [#8](https://github.com/osmannselim/Genomic-RawSeq-Analyzer/issues/8) | Final report & presentation | Both | ✅ Done |
 
 ---
 
